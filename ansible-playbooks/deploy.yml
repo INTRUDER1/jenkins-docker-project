@@ -1,0 +1,32 @@
+---
+  vars:
+    ansible_user: your-username 
+- name: Deploy Flask App with Docker
+  hosts: webserver
+  become: true  # Run tasks as root (required for package installation)
+  
+  tasks:
+    - name: Install required system packages
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Add user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Clone the latest application code
+      git:
+        repo: https://github.com/your-username/jenkins-docker-project.git
+        dest: /home/{{ ansible_user }}/app
+        version: main
+        force: yes
+
+    - name: Start the application using Docker Compose
+      shell: "cd /home/{{ ansible_user }}/app && docker-compose up -d"

@@ -18,6 +18,13 @@ pipeline {
             }
         }
 
+	
+        stage('Run Ansible Playbook') {
+            steps {
+                sh 'ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml'
+            }
+        }
+
         stage('Test Application') {
             steps {
                 sh 'curl -s http://localhost:5000'
