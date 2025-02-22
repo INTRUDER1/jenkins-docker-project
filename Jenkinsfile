@@ -19,7 +19,7 @@ pipeline {
                 sh '''
                 sudo apt update
                 sudo apt install -y python3-venv
-                python3 -m venv ${VENV_DIR}
+                python3 -m venv venv
                 '''
             }
         }
@@ -27,8 +27,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                source ${VENV_DIR}/bin/activate
-                pip install -r ${APP_DIR}/requirements.txt
+                bash -c "source venv/bin/activate && pip install -r app/requirements.txt"
                 '''
             }
         }
@@ -36,6 +35,7 @@ pipeline {
         stage('Run Ansible Deployment') {
             steps {
                 sh '''
+                echo "Running Ansible Playbook......."
                 sudo apt install -y ansible
                 ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml
                 '''
