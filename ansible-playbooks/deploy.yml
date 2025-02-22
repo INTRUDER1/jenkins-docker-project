@@ -1,25 +1,66 @@
 ---
 - name: Deploy Flask App
-  hosts: webserver
+  hosts: all
   become: yes
+  vars:
+    app_dir: /home/ubuntu/flask_app
+    venv_dir: /home/ubuntu/flask_app/venv
+    repo_url: "https://github.com/INTRUDER1/jenkins-docker-project.git"
+    
   tasks:
-    - name: Install Python3 & Pip
+    - name: Disable SSH host key checking
+      lineinfile:
+        path: ~/.ssh/config
+        line: "StrictHostKeyChecking no"
+        create: yes
+
+    - name: Ensure Python3, Pip, and virtualenv are installed
       apt:
         name:
           - python3
           - python3-pip
+          - python3-venv
         state: present
+        update_cache: yes
 
-    - name: Copy application files
-      copy:
-        src: ../app/
-        dest: /home/ubuntu/app/
-    
-    - name: Install dependencies
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Clone the repository
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+        force: yes
+
+    - name: Create a virtual environment
+      command: python3 -m venv "{{ venv_dir }}"
+      args:
+        creates: "{{ venv_dir }}/bin/activate"
+
+    - name: Install dependencies inside virtual environment
       pip:
-        requirements: /home/ubuntu/app/requirements.txt
-        executable: pip3
+        requirements: "{{ app_dir }}/requirements.txt"
+        virtualenv: "{{ venv_dir }}"
 
     - name: Run Flask Application
-      shell: nohup python3 /home/ubuntu/app/main.py > app.log 2>&1 &
+      shell: |
+        nohup {{ venv_dir }}/bin/python3 {{ app_dir }}/app/main.py > /dev/null 2>&1 &
+      args:
+        chdir: "{{ app_dir }}"
+      async: 1000
+      poll: 0
+      notify: Restart Flask App
 
+  handlers:
+    - name: Restart Flask App
+      shell: |
+        pkill -f main.py || true
+        nohup {{ venv_dir }}/bin/python3 {{ app_dir }}/app/main.py > /dev/null 2>&1 &
+      async: 1000
+      poll: 0
