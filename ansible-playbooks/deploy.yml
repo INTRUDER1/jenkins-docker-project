@@ -6,13 +6,16 @@
     app_dir: /home/ubuntu/flask_app
     venv_dir: /home/ubuntu/flask_app/venv
     repo_url: "https://github.com/INTRUDER1/jenkins-docker-project.git"
-    
+
   tasks:
     - name: Disable SSH host key checking
       lineinfile:
-        path: ~/.ssh/config
+        path: /home/ubuntu/.ssh/config
         line: "StrictHostKeyChecking no"
         create: yes
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
 
     - name: Ensure Python3, Pip, and virtualenv are installed
       apt:
@@ -20,6 +23,7 @@
           - python3
           - python3-pip
           - python3-venv
+          - git
         state: present
         update_cache: yes
 
@@ -38,6 +42,14 @@
         version: main
         force: yes
 
+    - name: Ensure correct ownership of app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        recurse: yes
+
     - name: Create a virtual environment
       command: python3 -m venv "{{ venv_dir }}"
       args:
@@ -45,22 +57,29 @@
 
     - name: Install dependencies inside virtual environment
       pip:
-        requirements: "{{ app_dir }}/requirements.txt"
+        requirements: "{{ app_dir }}/app/requirements.txt"
         virtualenv: "{{ venv_dir }}"
 
-    - name: Run Flask Application
-      shell: |
-        nohup {{ venv_dir }}/bin/python3 {{ app_dir }}/app/main.py > /dev/null 2>&1 &
-      args:
-        chdir: "{{ app_dir }}"
-      async: 1000
-      poll: 0
-      notify: Restart Flask App
+    - name: Create a systemd service for Flask app
+      copy:
+        dest: /etc/systemd/system/flask_app.service
+        content: |
+          [Unit]
+          Description=Flask Application
+          After=network.target
 
-  handlers:
-    - name: Restart Flask App
-      shell: |
-        pkill -f main.py || true
-        nohup {{ venv_dir }}/bin/python3 {{ app_dir }}/app/main.py > /dev/null 2>&1 &
-      async: 1000
-      poll: 0
+          [Service]
+          User=ubuntu
+          WorkingDirectory={{ app_dir }}
+          ExecStart={{ venv_dir }}/bin/python3 {{ app_dir }}/app/main.py
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd and enable Flask app service
+      systemd:
+        daemon_reload: yes
+        name: flask_app
+        enabled: yes
+        state: restarted
