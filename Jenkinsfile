@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/INTRUDER1/jenkins-docker-project.git'
+                git branch: 'main', url: 'https://github.com/INTRUDER1/jenkins-docker-project.git'
             }
         }
 
