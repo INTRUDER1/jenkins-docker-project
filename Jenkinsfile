@@ -1,43 +1,29 @@
 pipeline {
     agent any
-
-    environment {
-        APP_DIR = "app"
-        VENV_DIR = "${WORKSPACE}/venv"
-        ANSIBLE_HOST_KEY_CHECKING = 'False'  // Disables SSH strict host key checking
-    }
-
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/INTRUDER1/jenkins-docker-project.git'
-            }
-        }
-
-        stage('Setup Python Virtual Environment') {
-            steps {
-                sh '''
-                sudo apt update
-                sudo apt install -y python3-venv
-                python3 -m venv venv
-                '''
+                git 'https://github.com/INTRUDER1/jenkins-docker-project.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                bash -c "source venv/bin/activate && pip install -r app/requirements.txt"
+                sudo apt update
+                sudo apt install -y python3-venv ansible
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install -r requirements.txt
                 '''
             }
         }
 
-        stage('Run Ansible Deployment') {
+        stage('Run Flask App') {
             steps {
                 sh '''
-                echo "Running Ansible Playbook......."
-                sudo apt install -y ansible
-                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml
+                . venv/bin/activate
+                nohup gunicorn -w 4 -b 0.0.0.0:5000 main:app &
                 '''
             }
         }
@@ -61,3 +47,4 @@ pipeline {
         }
     }
 }
+
