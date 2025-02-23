@@ -30,11 +30,11 @@ pipeline {
             }
         }
 
-        stage('Run Flask App') {
+        stage('Run Ansible Deployment') {
             steps {
                 sh '''
-                . venv/bin/activate
-                nohup gunicorn -w 4 -b 0.0.0.0:5000 main:app &
+                echo "Running Ansible Playbook..."
+                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml
                 '''
             }
         }
