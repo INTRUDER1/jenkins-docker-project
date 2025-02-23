@@ -12,23 +12,33 @@ pipeline {
             }
         }
 
-        stage('Setup Python Virtual Environment') {
+        stage('Build and Start Docker Containers') {
             steps {
                 sh '''
-                sudo apt update
-                sudo apt install -y python3-venv
-                python3 -m venv venv
+                echo "Building and starting Docker containers..."
+                docker-compose down || true  # Stop existing containers if running
+                docker-compose up --build -d
                 '''
             }
         }
+        
+        // stage('Setup Python Virtual Environment') {
+        //     steps {
+        //         sh '''
+        //         sudo apt update
+        //         sudo apt install -y python3-venv
+        //         python3 -m venv venv
+        //         '''
+        //     }
+        // }
 
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                bash -c "source venv/bin/activate && pip install -r app/requirements.txt"
-                '''
-            }
-        }
+        // stage('Install Dependencies') {
+        //     steps {
+        //         sh '''
+        //         bash -c "source venv/bin/activate && pip install -r app/requirements.txt"
+        //         '''
+        //     }
+        // }
 
         stage('Run Ansible Deployment') {
             steps {
