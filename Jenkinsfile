@@ -12,11 +12,20 @@ pipeline {
             }
         }
 
+        stage('Prepare SSH Key') {
+            steps {
+                sh '''
+                chmod 600 /var/lib/jenkins/.ssh/docker-key.pem
+                chown jenkins:jenkins /var/lib/jenkins/.ssh/docker-key.pem
+                '''
+            }
+        }
+
         stage('Build and Start Docker Containers') {
             steps {
                 sh '''
                 echo "Building and starting Docker containers..."
-                docker-compose down || true  # Stop existing containers if running
+                docker-compose down || echo "No containers were running"  # Stop existing containers if running
                 docker-compose up --build -d
                 '''
             }
@@ -44,7 +53,7 @@ pipeline {
             steps {
                 sh '''
                 echo "Running Ansible Playbook..."
-                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml
+                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml --key-file /var/lib/jenkins/.ssh/docker-key.pem
                 '''
             }
         }
@@ -52,6 +61,8 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
+                echo "Waiting for Flask App to start..."
+                sleep 10
                 echo "Checking Flask App Deployment..."
                 curl -v --retry 5 --retry-delay 10 http://34.238.125.159:5000 || echo "Flask App is not running"
                 '''
