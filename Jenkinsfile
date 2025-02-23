@@ -1,5 +1,10 @@
 pipeline {
     agent any
+
+    environment {
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
+    
     stages {
         stage('Clone Repository') {
             steps {
@@ -7,14 +12,20 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Setup Python Virtual Environment') {
             steps {
                 sh '''
                 sudo apt update
-                sudo apt install -y python3-venv ansible
+                sudo apt install -y python3-venv
                 python3 -m venv venv
-                . venv/bin/activate
-                pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                bash -c "source venv/bin/activate && pip install -r app/requirements.txt"
                 '''
             }
         }
