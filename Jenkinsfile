@@ -64,7 +64,7 @@ pipeline {
                 echo "Waiting for Flask App to start..."
                 sleep 10
                 echo "Checking Flask App Deployment..."
-                curl -v --retry 5 --retry-delay 10 http://34.238.125.159:5000 || echo "Flask App is not running"
+                curl -v --retry 5 --retry-delay 10 http://44.201.102.59:5000 || echo "Flask App is not running"
                 '''
             }
         }
