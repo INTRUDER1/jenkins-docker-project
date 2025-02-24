@@ -53,7 +53,7 @@ pipeline {
             steps {
                 sh '''
                 echo "Running Ansible Playbook..."
-                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml --key-file /var/lib/jenkins/.ssh/docker-centre.pem
+                ansible-playbook -i ansible-playbooks/inventory.ini ansible-playbooks/deploy.yml
                 '''
             }
         }
